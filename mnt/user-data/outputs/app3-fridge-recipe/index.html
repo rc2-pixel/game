@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>冷蔵庫レシピ</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'M PLUS Rounded 1c', sans-serif;
+    background: linear-gradient(160deg, #fff9f0 0%, #fff0e0 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: #3d2c1e;
+  }
+
+  h1 { text-align: center; font-size: 1.7rem; color: #e07a2f; margin-bottom: 4px; }
+  .subtitle { text-align: center; color: #b07050; font-size: 0.82rem; margin-bottom: 20px; }
+
+  .card {
+    background: white;
+    border-radius: 20px;
+    padding: 18px;
+    margin-bottom: 14px;
+    box-shadow: 0 2px 16px rgba(224,122,47,0.1);
+  }
+
+  .section-title { font-size: 0.95rem; font-weight: 700; color: #e07a2f; margin-bottom: 10px; }
+
+  .ingredient-input {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .ingredient-input input {
+    flex: 1;
+    border: 2px solid #f0d0b0;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    outline: none;
+    background: #fff9f5;
+  }
+  .ingredient-input input:focus { border-color: #e07a2f; }
+
+  .add-btn {
+    background: #e07a2f;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    min-height: 36px;
+  }
+
+  .tag {
+    background: #fff0e0;
+    border: 1.5px solid #f0c090;
+    border-radius: 20px;
+    padding: 5px 12px;
+    font-size: 0.82rem;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .tag .remove {
+    cursor: pointer;
+    color: #e07a2f;
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+
+  .search-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #e07a2f, #f0a050);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 1rem;
+    font-family: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+
+  .recipe-card {
+    background: #fff9f5;
+    border: 1.5px solid #f0d0b0;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 10px;
+  }
+
+  .recipe-name { font-size: 1.1rem; font-weight: 700; color: #e07a2f; margin-bottom: 6px; }
+  .recipe-time { font-size: 0.78rem; color: #b07050; margin-bottom: 8px; }
+  .recipe-steps { font-size: 0.85rem; line-height: 1.8; color: #5a3a28; }
+  .recipe-match { font-size: 0.75rem; color: #2ecc71; font-weight: 700; margin-bottom: 4px; }
+
+  .empty-msg { text-align: center; color: #c0a080; font-size: 0.88rem; padding: 20px 0; }
+
+  .loading { text-align: center; color: #e07a2f; padding: 20px 0; font-size: 0.9rem; }
+
+  .quick-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .quick-tag {
+    background: #fff0e0;
+    border: 1.5px dashed #e07a2f;
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.78rem;
+    cursor: pointer;
+    color: #e07a2f;
+  }
+  .quick-tag:hover { background: #ffe0c0; }
+</style>
+</head>
+<body>
+
+<h1>🍳 冷蔵庫レシピ</h1>
+<p class="subtitle">ある食材でできる料理を提案します</p>
+
+<div class="card">
+  <div class="section-title">🥦 食材を追加</div>
+  <div class="quick-add">
+    <span class="quick-tag" onclick="quickAdd('卵')">＋卵</span>
+    <span class="quick-tag" onclick="quickAdd('豆腐')">＋豆腐</span>
+    <span class="quick-tag" onclick="quickAdd('鶏肉')">＋鶏肉</span>
+    <span class="quick-tag" onclick="quickAdd('キャベツ')">＋キャベツ</span>
+    <span class="quick-tag" onclick="quickAdd('ご飯')">＋ご飯</span>
+    <span class="quick-tag" onclick="quickAdd('じゃがいも')">＋じゃがいも</span>
+  </div>
+  <div class="ingredient-input">
+    <input type="text" id="ingredientInput" placeholder="食材を入力..." onkeydown="if(event.key==='Enter')addIngredient()">
+    <button class="add-btn" onclick="addIngredient()">追加</button>
+  </div>
+  <div class="tags" id="tagList"></div>
+</div>
+
+<button class="search-btn" onclick="findRecipes()">🔍 レシピを探す！</button>
+
+<div class="card" style="margin-top:14px">
+  <div class="section-title">🍽 提案レシピ</div>
+  <div id="recipeList"><div class="empty-msg">食材を追加してレシピを探してみよう！</div></div>
+</div>
+
+<script>
+const RECIPES = [
+  {name:'卵チャーハン', needs:['卵','ご飯'], time:'10分', steps:'1. フライパンで卵を炒める\n2. ご飯を加えて炒める\n3. 醤油で味付けして完成！'},
+  {name:'豆腐の味噌汁', needs:['豆腐'], time:'5分', steps:'1. 出汁を沸かす\n2. 豆腐を角切りにして入れる\n3. 味噌を溶いて完成！'},
+  {name:'鶏の照り焼き', needs:['鶏肉'], time:'20分', steps:'1. 鶏肉を焼く\n2. 醤油・みりん・砂糖を合わせる\n3. タレを絡めて完成！'},
+  {name:'お好み焼き', needs:['卵','キャベツ'], time:'25分', steps:'1. キャベツを千切りにする\n2. 卵と小麦粉で生地を作る\n3. 焼いてソースをかけて完成！'},
+  {name:'ポテトサラダ', needs:['じゃがいも'], time:'20分', steps:'1. じゃがいもを茹でる\n2. マッシュしてマヨネーズと混ぜる\n3. 塩胡椒で味を整えて完成！'},
+  {name:'親子丼', needs:['卵','鶏肉','ご飯'], time:'15分', steps:'1. 鶏肉を煮る\n2. 卵でとじる\n3. ご飯にのせて完成！'},
+  {name:'炒り豆腐', needs:['豆腐','卵'], time:'10分', steps:'1. 豆腐を崩しながら炒める\n2. 卵を加えてさらに炒める\n3. 醤油で味付けして完成！'},
+  {name:'キャベツの浅漬け', needs:['キャベツ'], time:'5分', steps:'1. キャベツを切る\n2. 塩でもむ\n3. 30分漬けて完成！'},
+  {name:'コロッケ', needs:['じゃがいも','卵'], time:'30分', steps:'1. じゃがいもをマッシュ\n2. 卵でコーティング\n3. 揚げて完成！'},
+  {name:'チキンライス', needs:['鶏肉','ご飯'], time:'20分', steps:'1. 鶏肉を炒める\n2. ご飯を加える\n3. ケチャップで味付けして完成！'},
+];
+
+let ingredients = [];
+
+function quickAdd(item) {
+  if (!ingredients.includes(item)) {
+    ingredients.push(item);
+    renderTags();
+  }
+}
+
+function addIngredient() {
+  const input = document.getElementById('ingredientInput');
+  const val = input.value.trim();
+  if (val && !ingredients.includes(val)) {
+    ingredients.push(val);
+    renderTags();
+  }
+  input.value = '';
+}
+
+function removeIngredient(item) {
+  ingredients = ingredients.filter(i => i !== item);
+  renderTags();
+}
+
+function renderTags() {
+  const list = document.getElementById('tagList');
+  if (ingredients.length === 0) { list.innerHTML = ''; return; }
+  list.innerHTML = ingredients.map(i => `
+    <div class="tag">${i} <span class="remove" onclick="removeIngredient('${i}')">×</span></div>
+  `).join('');
+}
+
+function findRecipes() {
+  const list = document.getElementById('recipeList');
+  if (ingredients.length === 0) {
+    list.innerHTML = '<div class="empty-msg">食材を追加してください！</div>';
+    return;
+  }
+  list.innerHTML = '<div class="loading">🔍 レシピを検索中...</div>';
+
+  setTimeout(() => {
+    const matched = RECIPES.map(r => {
+      const match = r.needs.filter(n => ingredients.includes(n));
+      return {...r, matchCount: match.length, matchIngredients: match};
+    }).filter(r => r.matchCount > 0).sort((a,b) => b.matchCount - a.matchCount);
+
+    if (matched.length === 0) {
+      list.innerHTML = '<div class="empty-msg">マッチするレシピが見つかりませんでした。食材を増やしてみてください。</div>';
+      return;
+    }
+
+    list.innerHTML = matched.map(r => `
+      <div class="recipe-card">
+        <div class="recipe-match">✅ ${r.matchIngredients.join('・')} が使えます</div>
+        <div class="recipe-name">🍽 ${r.name}</div>
+        <div class="recipe-time">⏱ 調理時間：${r.time}</div>
+        <div class="recipe-steps" style="white-space:pre-line">${r.steps}</div>
+      </div>
+    `).join('');
+  }, 600);
+}
+</script>
+</body>
+</html>

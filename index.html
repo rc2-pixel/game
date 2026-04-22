@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>気分の天気予報</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@300;400;700&family=Playfair+Display:ital@1&display=swap');
+
+  :root {
+    --sky: #a8d8f0;
+    --cloud: #f0f4f8;
+    --sun: #ffd166;
+    --rain: #5b8fa8;
+    --thunder: #4a4e69;
+    --text: #2d3142;
+    --card: rgba(255,255,255,0.75);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Zen Kaku Gothic New', sans-serif;
+    background: linear-gradient(160deg, #a8d8f0 0%, #d0eaff 50%, #fef9ef 100%);
+    min-height: 100vh;
+    color: var(--text);
+    padding: 20px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: 0.05em;
+  }
+
+  .subtitle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #5b8fa8;
+    margin-bottom: 24px;
+  }
+
+  .card {
+    background: var(--card);
+    backdrop-filter: blur(10px);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 24px rgba(90,143,168,0.1);
+  }
+
+  .mood-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .mood-btn {
+    background: white;
+    border: 2px solid transparent;
+    border-radius: 16px;
+    padding: 14px 8px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 0.8rem;
+    font-family: inherit;
+    transition: all 0.2s;
+  }
+
+  .mood-btn .emoji { font-size: 2rem; display: block; margin-bottom: 4px; }
+  .mood-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,0.1); }
+  .mood-btn.selected { border-color: var(--rain); background: #e8f4fb; }
+
+  .note-area {
+    width: 100%;
+    border: 1.5px solid #c8dde8;
+    border-radius: 12px;
+    padding: 12px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: none;
+    background: white;
+    outline: none;
+    margin-bottom: 12px;
+  }
+
+  .save-btn {
+    width: 100%;
+    background: linear-gradient(135deg, #5b8fa8, #3a6fa8);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 1rem;
+    font-family: inherit;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity 0.2s;
+  }
+  .save-btn:hover { opacity: 0.88; }
+
+  .section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #3a6fa8;
+  }
+
+  .history-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e0eef6;
+    font-size: 0.85rem;
+  }
+  .history-item:last-child { border-bottom: none; }
+  .history-emoji { font-size: 1.5rem; }
+  .history-date { color: #888; font-size: 0.75rem; }
+  .history-note { color: #555; }
+
+  .pattern-box {
+    background: linear-gradient(135deg, #e8f4fb, #fef9ef);
+    border-radius: 14px;
+    padding: 14px;
+    font-size: 0.85rem;
+    line-height: 1.7;
+    color: #3a6fa8;
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(80px);
+    background: #3a6fa8;
+    color: white;
+    padding: 12px 24px;
+    border-radius: 30px;
+    font-size: 0.9rem;
+    transition: transform 0.3s;
+    z-index: 999;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<h1>🌤 気分の天気予報</h1>
+<p class="subtitle">今日の気分を記録しよう</p>
+
+<div class="card">
+  <div class="section-title">今日の気分は？</div>
+  <div class="mood-grid" id="moodGrid">
+    <button class="mood-btn" data-mood="晴れ" onclick="selectMood(this)">
+      <span class="emoji">☀️</span>晴れ
+    </button>
+    <button class="mood-btn" data-mood="曇り" onclick="selectMood(this)">
+      <span class="emoji">☁️</span>曇り
+    </button>
+    <button class="mood-btn" data-mood="雨" onclick="selectMood(this)">
+      <span class="emoji">🌧️</span>雨
+    </button>
+    <button class="mood-btn" data-mood="雷" onclick="selectMood(this)">
+      <span class="emoji">⛈️</span>雷
+    </button>
+    <button class="mood-btn" data-mood="虹" onclick="selectMood(this)">
+      <span class="emoji">🌈</span>虹
+    </button>
+    <button class="mood-btn" data-mood="雪" onclick="selectMood(this)">
+      <span class="emoji">❄️</span>雪
+    </button>
+  </div>
+  <textarea class="note-area" id="noteInput" rows="3" placeholder="一言メモ（任意）"></textarea>
+  <button class="save-btn" onclick="saveMood()">今日の気分を保存 ✓</button>
+</div>
+
+<div class="card">
+  <div class="section-title">📅 最近の記録</div>
+  <div id="historyList"><p style="color:#aaa;font-size:0.85rem">まだ記録がありません</p></div>
+</div>
+
+<div class="card">
+  <div class="section-title">🤖 AIパターン分析</div>
+  <div class="pattern-box" id="patternBox">記録が3件以上になると分析が表示されます。</div>
+</div>
+
+<div class="toast" id="toast">保存しました！</div>
+
+<script>
+  const EMOJIS = {晴れ:'☀️', 曇り:'☁️', 雨:'🌧️', 雷:'⛈️', 虹:'🌈', 雪:'❄️'};
+  let selectedMood = null;
+  let records = JSON.parse(localStorage.getItem('moodRecords') || '[]');
+
+  function selectMood(btn) {
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedMood = btn.dataset.mood;
+  }
+
+  function saveMood() {
+    if (!selectedMood) { alert('気分を選んでください！'); return; }
+    const note = document.getElementById('noteInput').value;
+    const now = new Date();
+    records.unshift({
+      mood: selectedMood,
+      note,
+      date: now.toLocaleDateString('ja-JP'),
+      day: ['日','月','火','水','木','金','土'][now.getDay()]
+    });
+    localStorage.setItem('moodRecords', JSON.stringify(records));
+    selectedMood = null;
+    document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('noteInput').value = '';
+    renderHistory();
+    analyzePattern();
+    showToast();
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (records.length === 0) {
+      list.innerHTML = '<p style="color:#aaa;font-size:0.85rem">まだ記録がありません</p>';
+      return;
+    }
+    list.innerHTML = records.slice(0, 7).map(r => `
+      <div class="history-item">
+        <span class="history-emoji">${EMOJIS[r.mood]}</span>
+        <div>
+          <div class="history-date">${r.date}（${r.day}曜日）</div>
+          <div>${r.mood}${r.note ? '　' + r.note : ''}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function analyzePattern() {
+    const box = document.getElementById('patternBox');
+    if (records.length < 3) {
+      box.textContent = '記録が3件以上になると分析が表示されます。';
+      return;
+    }
+    const counts = {};
+    records.forEach(r => counts[r.mood] = (counts[r.mood] || 0) + 1);
+    const top = Object.entries(counts).sort((a,b) => b[1]-a[1])[0];
+    const recent = records.slice(0, 3).map(r => r.mood);
+    const streak = recent.every(m => m === recent[0]);
+    let msg = `📊 ${records.length}件の記録を分析しました。\n\n`;
+    msg += `一番多い気分は「${EMOJIS[top[0]]} ${top[0]}」（${top[1]}回）です。\n`;
+    if (streak) msg += `\n最近3日間は「${EMOJIS[recent[0]]} ${recent[0]}」が続いています。`;
+    msg += `\n\n✨ 気分のパターンを知ることで、自分をもっと理解できます！`;
+    box.textContent = msg;
+  }
+
+  function showToast() {
+    const t = document.getElementById('toast');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  renderHistory();
+  analyzePattern();
+</script>
+</body>
+</html>
